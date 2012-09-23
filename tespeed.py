@@ -127,8 +127,6 @@ class TeSpeed:
             now=self.TestSingleLatency(server['url']+"latency.txt?x=" + str( time.time() ))*1000
             if now == -1:
                 continue
-            print server
-            print "\n\n\n\n\n\n\n\n"
             print "%0.0f ms latency for %s (%s, %s, %s) [%0.2f km]" % (now, server['url'], server['sponsor'], server['name'], server['country'], server['distance'])
 
             if (now < shortest and shortest > 0) or shortest < 0:
