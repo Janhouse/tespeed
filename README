@@ -54,5 +54,6 @@ TODO:
  *  Store the measurement data and draw graphs.
  *  Measure the speed for the whole network interface (similar like it was in the
     old version of Tespeed).
+ *  Random data generator uses too much resources.
 
 

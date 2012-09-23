@@ -15,7 +15,7 @@ import gzip
 import time
 import string
 import random
-from math import sqrt
+from math import radians, cos, sin, asin, sqrt
 
 from StringIO import StringIO
 
@@ -81,9 +81,19 @@ class TeSpeed:
 
 
     def Distance(self, one, two):
-    # Calculates distance between two objects in plane
-        dist = sqrt(pow(two[0] - one[0], 2) + pow(two[1] - one[1], 2))
-        return dist
+    #Calculate the great circle distance between two points 
+    #on the earth specified in decimal degrees (haversine formula)
+    #(http://stackoverflow.com/posts/4913653/revisions)
+    # convert decimal degrees to radians 
+
+        lon1, lat1, lon2, lat2 = map(radians, [one[0], one[1], two[0], two[1]])
+        # haversine formula 
+        dlon = lon2 - lon1 
+        dlat = lat2 - lat1 
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        c = 2 * asin(sqrt(a)) 
+        km = 6367 * c
+        return km 
 
 
     def Closest(self, center, points):
@@ -91,6 +101,7 @@ class TeSpeed:
         closest={}
         for p in range(len(points)):
             now = self.Distance(center, [points[p]['lat'], points[p]['lon']])
+            points[p]['distance']=now
             while True:
                 if now in closest:
                     now=now+00.1
@@ -116,7 +127,9 @@ class TeSpeed:
             now=self.TestSingleLatency(server['url']+"latency.txt?x=" + str( time.time() ))*1000
             if now == -1:
                 continue
-            print "%0.0fms latency for %s (%s, %s, %s)" % (now, server['url'], server['sponsor'], server['name'], server['country'])
+            print server
+            print "\n\n\n\n\n\n\n\n"
+            print "%0.0f ms latency for %s (%s, %s, %s) [%0.2f km]" % (now, server['url'], server['sponsor'], server['name'], server['country'], server['distance'])
 
             if (now < shortest and shortest > 0) or shortest < 0:
                 shortest = now
