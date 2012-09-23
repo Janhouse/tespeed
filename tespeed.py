@@ -36,7 +36,7 @@ class CallbackStringIO(StringIO):
         self.d=d
         self.total=self.len*self.th
     
-    def read(self, n=100000):
+    def read(self, n=10240):
         next = StringIO.read(self, n)
         #if 'done' in self.d:
         #    return
@@ -63,7 +63,7 @@ class CallbackStringIO(StringIO):
 
 class TeSpeed:
 
-    def __init__(self, server = ""):
+    def __init__(self, server = "", numTop = 0):
 
         self.headers = {
         'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -77,6 +77,13 @@ class TeSpeed:
         self.server=server
         print "Getting ready"
         self.latencycount=10
+        self.bestServers=5
+        self.numTop=int(numTop)
+        self.downList=['350x350', '500x500', '750x750', '1000x1000', 
+            '1500x1500', '2000x2000', '2500x2500', '3000x3000', 
+            '3500x3500', '4000x4000']
+        self.upSizes=[1024*512, 1024*1024, 1024*1024*2, 1024*1024*4]
+        self.postData=""
         self.TestSpeed()
 
 
@@ -96,7 +103,7 @@ class TeSpeed:
         return km 
 
 
-    def Closest(self, center, points):
+    def Closest(self, center, points, num=5):
     # Returns object that is closest to center
         closest={}
         for p in range(len(points)):
@@ -113,7 +120,7 @@ class TeSpeed:
         for key in sorted(closest):
             ret.append(closest[key])
             n+=1
-            if n >= 5:
+            if n >= num and num!=0:
                 break
         return ret
 
@@ -125,6 +132,7 @@ class TeSpeed:
         po = []
         for server in servers:
             now=self.TestSingleLatency(server['url']+"latency.txt?x=" + str( time.time() ))*1000
+            now=now/2 # Evil hack or just pure stupidity? Nobody knows...
             if now == -1:
                 continue
             print "%0.0f ms latency for %s (%s, %s, %s) [%0.2f km]" % (now, server['url'], server['sponsor'], server['name'], server['country'], server['distance'])
@@ -196,7 +204,10 @@ class TeSpeed:
         #   sys.stdout.write('\n')
 
 
-    def ChunkRead(self, response, num, th, d, w=0, chunk_size=8192, report_hook=None):
+    def ChunkRead(self, response, num, th, d, w=0, chunk_size=10240, report_hook=None):
+
+        if(w==1):
+            return [0,0,0]
         total_size = response.info().getheader('Content-Length').strip()
         total_size = int(total_size)
         bytes_so_far = 0
@@ -234,9 +245,7 @@ class TeSpeed:
 
         try:
             response = urllib2.urlopen(request,  timeout = 30);
-        
             size, start, end=self.ChunkRead(response, num, th, d, 1, report_hook=self.ChunkReport)
-        
         except urllib2.URLError, e:
             print "Failed uploading..."
 
@@ -300,27 +309,23 @@ class TeSpeed:
 
     def FindBestServer(self):
         print "Looking for closest and best server..."
-        best=self.TestLatency(self.Closest([self.config['lat'], self.config['lon']], self.server_list))
+        best=self.TestLatency(self.Closest([self.config['lat'], self.config['lon']], self.server_list, self.bestServers))
         self.server=best['url']
         print "Best server: ", self.server
 
 
-    def TestUpload(self):
-    # Testing upload speed
-
-        num=2
-        getone=self.server+"upload.php?x=" + str( time.time() )
+    def AsyncRequest(self, url, num, upload=0):
         
-        self.postData=urllib.urlencode({'upload6': ''.join(random.choice(string.ascii_uppercase) for x in range(1024*1024)) })
-
-        start=time.time()
-
         connections=[]
         d=Manager().dict()
+        start=time.time()
         for i in range(num):
             connection={}
             connection['parent'], connection['child']= Pipe()
-            connection['connection'] = Process(target=self.AsyncPost, args=(connection['child'], getone, i, num, d))
+            if upload==1:
+                connection['connection'] = Process(target=self.AsyncPost, args=(connection['child'], url, i, num, d))
+            else:
+                connection['connection'] = Process(target=self.AsyncGet, args=(connection['child'], url, i, num, d))
             connection['connection'].start()
             connections.append(connection)
 
@@ -333,65 +338,77 @@ class TeSpeed:
         sys.stdout.write('                                                                                           \r')
 
         sizes=0
-        tspeed=0
+        #tspeed=0
         for c in range(num):
             if connections[c]['end'] is not False:
-                tspeed=tspeed+(connections[c]['size']/(connections[c]['end']-connections[c]['start']))
+                #tspeed=tspeed+(connections[c]['size']/(connections[c]['end']-connections[c]['start']))
                 sizes=sizes+connections[c]['size']
         took=end-start
-        print "Upload size: %0.2f MB; Uploaded in upload: %0.2f s" % (sizes/1024/1024, took)
-        print "Upload speed: %0.2f MB/s" % ((sizes/1024/1024)/took)
+        
+        return [sizes, took]
+
+    def TestUpload(self):
+    # Testing upload speed
+
+        url=self.server+"upload.php?x=" + str( time.time() )
+
+        sizes, took=[0,0]
+        for i in range(0, len(self.upSizes)):
+            self.postData=urllib.urlencode({'upload6': ''.join(random.choice(string.ascii_uppercase) for x in range(self.upSizes[i])) })
+
+            sizes, took=self.AsyncRequest(url, 2, 1)
+            print "Upload size: %0.2f MiB; Uploaded in upload: %0.2f s" % (sizes/1024/1024, took)
+            print "Upload speed: %0.2f MiB/s" % ((sizes/1024/1024)/took)
+
+            if took>5:
+                break
+                
+        #print "Upload size: %0.2f MiB; Uploaded in upload: %0.2f s" % (sizes/1024/1024, took)
+        #print "Upload speed: %0.2f MiB/s" % ((sizes/1024/1024)/took)
 
 
     def TestDownload(self):
     # Testing download speed
+        sizes, took=[0,0]
+        for i in range(0, len(self.downList)):
+            url=self.server+"random"+self.downList[i]+".jpg?x=1348097022034&y=3"
+            #print url
+            sizes, took=self.AsyncRequest(url, i<1 and 2 or (i>7 and 6 or 4))
 
-        num=4
-        getone=self.server+"random1500x1500.jpg?x=1348097022034&y=3"
-        start=time.time()
-        connections=[]
-        d=Manager().dict()
-        for i in range(num):
-            connection={}
-            connection['parent'], connection['child']= Pipe()
-            connection['connection'] = Process(target=self.AsyncGet, args=(connection['child'], getone, i, num, d))
-            connection['connection'].start()
-            connections.append(connection)
+            print "Download size: %0.2f MiB; Uploaded in upload: %0.2f s" % (sizes/1024/1024, took)
+            print "Download speed: %0.2f MiB/s" % ((sizes/1024/1024)/took)
 
-        for c in range(num):
-            connections[c]['size'], connections[c]['start'], connections[c]['end']=connections[c]['parent'].recv()
-            connections[c]['connection'].join()
+            if took>7:
+                break
 
-        end=time.time()
-
-        sizes=0
-        tspeed=0
-        for c in range(num):
-            tspeed=tspeed+(connections[c]['size']/(connections[c]['end']-connections[c]['start']))
-            sizes=sizes+connections[c]['size']
-            
-        took=end-start
-        
-        sys.stdout.write('                                                                                           \r')
-
-        #print "Download speed (v2): ", tspeed/1024/1024, " MB/s"
-        print "Download size: %0.2f MB; Uploaded in upload: %0.2f s" % (sizes/1024/1024, took)
-        print "Download speed: %0.2f MB/s" % ((sizes/1024/1024)/took)
-
+        #print "Download size: %0.2f MiB; Uploaded in upload: %0.2f s" % (sizes/1024/1024, took)
+        #print "Download speed: %0.2f MiB/s" % ((sizes/1024/1024)/took)
 
     def TestSpeed(self):
 
+        if self.server=='list-servers':
+            self.config=self.LoadConfig()
+            self.server_list=self.LoadServers()
+            self.ListServers(self.numTop)
+            return
+            
         if self.server == '':
             self.config=self.LoadConfig()
             self.server_list=self.LoadServers()
             self.FindBestServer()
-            
+
         self.TestDownload()
         self.TestUpload()
 
+    def ListServers(self, num=0):
+        
+        allSorted=self.Closest([self.config['lat'], self.config['lon']], self.server_list, num)
+
+        for i in range(0, len(allSorted)):
+            print "%s. %s (%s, %s, %s) [%0.2f km]" % (i+1, allSorted[i]['url'], allSorted[i]['sponsor'], allSorted[i]['name'], allSorted[i]['country'], allSorted[i]['distance'])
 
 def main(argv):
-    t=TeSpeed(len(argv)>1 and argv[1] or '')
+    t=TeSpeed(len(argv)>1 and argv[1] or '', len(argv)>2 and argv[2])
 
 
 if __name__ == '__main__':
