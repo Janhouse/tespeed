@@ -1,0 +1,58 @@
+
+Tespeed (terminal speedtest) - Copyright 2012 Janis Jansons (janis.jansons@janhouse.lv)
+
+
+    This is a new Tespeed version written in Python (for the purpose of learning it).
+
+    The old one was written in PHP years ago and wasn't really made for general
+    public (was fine tuned and possibly working only on my server).
+
+    Even though the old version didn't work on most boxes, it somehow got
+    almost 17 000 downloads on Sourceforge. I guess some people could use this
+    (those who hate Flash, JavaScript, has GUI-less servers, etc.) so I'll
+    try to make this one a bit better working in time.
+
+    Let's call this version 1.0-alpha
+
+
+    Of course, this script could not work like this without the best speed 
+    testing site out there - http://www.speedtest.net/
+    Support them in any way you can (going to their website and clicking on
+    ads could probably make them a bit happier). :)
+
+
+Installing:
+
+    This script requires lxml Python2 module
+    install python-lxml (Debian) or python2-lxml (Archlinux)
+
+
+What the script does:
+
+ *  Loads config from speedtest.net (http://speedtest.net/speedtest-config.php).
+
+ *  Gets server list (http://speedtest.net/speedtest-servers.php).
+
+ *  Picks 5 closests servers using the coordinates provides by speedtest.net 
+    config and serverlist.
+
+ *  Checks latency for those servers and picks one with the lowest.
+
+ *  Does download speed test and returns results.
+
+ *  Does upload speed test and returns results.
+
+
+TODO:
+
+ *  Add error checking.
+ *  Make it less messy.
+ *  Make it run various tests with different download and upload data ammount 
+    to get better results.
+ *  Send found results to speedtest.net API (needs some hash?) and get the link
+    to the generated image.
+ *  Store the measurement data and draw graphs.
+ *  Measure the speed for the whole network interface (similar like it was in the
+    old version of Tespeed).
+
+

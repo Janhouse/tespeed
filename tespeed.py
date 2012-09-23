@@ -1,197 +1,388 @@
 #!/usr/bin/env python2
-
 #
-#
-# install python-lxml (debian) or python2-lxml (arch)
-#
-#
-#
-# http://speedtest.net/speedtest-config.php?x=1333142532313 - load config
-#
-# http://speedtest.net/speedtest-servers.php?x=1333142532313 - serverlist
-#
-# pick closest servers
-#
-# check latency for each server
-#
-# pick fastest
-#
-# do download tests
-#
-# do upload tests
-#
-# send results to api
-#
-# print link to image
-#
-#
+# Copyright 2012 Janis Jansons (janis.jansons@janhouse.lv)
 #
 
-import urllib2
-import sys
-from multiprocessing import Process, Pipe
 import os
+import urllib
+import urllib2
+import gzip
+import sys
+from multiprocessing import Process, Pipe, Manager
 from lxml import etree
 import time
+import gzip
+import time
+import string
+import random
+from math import sqrt
 
-print "Getting ready"
+from StringIO import StringIO
 
-def info(title):
-    print title
-    print 'module name:', __name__
-    print 'parent process:', os.getppid()
-    print 'process id:', os.getpid()
+# Using StringIO with callback to measure upload progress
+class CallbackStringIO(StringIO):   
+    def __init__(self, num, th, d, buf = ''):
+        # Force self.buf to be a string or unicode
+        if not isinstance(buf, basestring):
+            buf = str(buf)
+        self.buf = buf
+        self.len = len(buf)
+        self.buflist = []
+        self.pos = 0
+        self.closed = False
+        self.softspace = 0
+        self.th=th
+        self.num=num
+        self.d=d
+        self.total=self.len*self.th
+    
+    def read(self, n=100000):
+        next = StringIO.read(self, n)
+        #if 'done' in self.d:
+        #    return
+        
+        self.d[self.num]=self.pos
+        down=0
+        for i in range(self.th):
+            down=down+self.d.get(i, 0)
+        if self.num==0:
+            percent = float(down) / (self.total)
+            percent = round(percent*100, 2)
+            sys.stdout.write("Uploaded %d of %d bytes (%0.2f%%) in %d threads\r" %
+               (down, self.total, percent, self.th))
 
-def get_request(uri):
+        #if down >= self.total:
+        #    sys.stdout.write('\n')
+        #    self.d['done']=1
 
-
-    headers = {
-    'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'User-Agent' : 'Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20100101 Firefox/11.0',
-    'Accept-Language' : 'en-us,en;q=0.5',
-    'Connection' : 'keep-alive',
-    'Accept-Encoding' : 'gzip, deflate',
-
-    }
-
-    print uri
-
-    #data = urllib.urlencode(values)
-    req = urllib2.Request(uri, headers = headers)
-    return req
-    #handle = urllib2.urlopen(req)
-    #page = handle.read()
-
-    #print page
-
-    # result.read() will contain the data
-    # result.info() will contain the HTTP headers
-
-    # To get say the content-length header
-    #length = handle.info()['Content-Length']
-
-
-
-def post_request(uri):
-
-    headers = {
-    'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'User-Agent' : 'Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20100101 Firefox/11.0',
-    'Accept-Language' : 'en-us,en;q=0.5',
-    'Connection' : 'keep-alive',
-    'Accept-Encoding' : 'gzip, deflate',
-    'Referer' : 'http://c.speedtest.net/flash/speedtest.swf?v=301256',
-    }
-
-    print uri
-
-    #data = urllib.urlencode(values)
-    req = urllib2.Request(uri, headers = headers)
-    return req
-    #handle = urllib2.urlopen(req)
-    #page = handle.read()
-
-    #print page
-
-    # result.read() will contain the data
-    # result.info() will contain the HTTP headers
-
-    # To get say the content-length header
-    #length = handle.info()['Content-Length']
+        return next
+        
+    def __len__(self):
+        return self.len
 
 
-def chunk_report(bytes_so_far, chunk_size, total_size):
-   percent = float(bytes_so_far) / total_size
-   percent = round(percent*100, 2)
-   sys.stdout.write("Downloaded %d of %d bytes (%0.2f%%)\r" %
-       (bytes_so_far, total_size, percent))
+class TeSpeed:
 
-   if bytes_so_far >= total_size:
-      sys.stdout.write('\n')
+    def __init__(self, server = ""):
 
-def chunk_read(response, chunk_size=8192, report_hook=None):
-    total_size = response.info().getheader('Content-Length').strip()
-    total_size = int(total_size)
-    bytes_so_far = 0
+        self.headers = {
+        'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'User-Agent' : 'Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20100101 Firefox/11.0',
+        'Accept-Language' : 'en-us,en;q=0.5',
+        'Connection' : 'keep-alive',
+        'Accept-Encoding' : 'gzip, deflate',
+        #'Referer' : 'http://c.speedtest.net/flash/speedtest.swf?v=301256',
+        }
 
-    start = time.time()
+        self.server=server
+        print "Getting ready"
+        self.latencycount=10
+        self.TestSpeed()
 
-    while 1:
-      chunk = response.read(chunk_size)
-      bytes_so_far += len(chunk)
 
-      if not chunk:
-         break
+    def Distance(self, one, two):
+    # Calculates distance between two objects in plane
+        dist = sqrt(pow(two[0] - one[0], 2) + pow(two[1] - one[1], 2))
+        return dist
 
-      if report_hook:
-         report_hook(bytes_so_far, chunk_size, total_size)
 
-    end = time.time()
+    def Closest(self, center, points):
+    # Returns object that is closest to center
+        closest={}
+        for p in range(len(points)):
+            now = self.Distance(center, [points[p]['lat'], points[p]['lon']])
+            while True:
+                if now in closest:
+                    now=now+00.1
+                else:
+                    break
+            closest[now]=points[p]
+        n=0
+        ret=[]
+        for key in sorted(closest):
+            ret.append(closest[key])
+            n+=1
+            if n >= 5:
+                break
+        return ret
 
-    return [ bytes_so_far, start, end ]
 
-def async_get(conn, uri):
+    def TestLatency(self, servers):
+    # Finding the server with lowest latency
+        print "Testing latency..."
+        shortest = -1.0
+        po = []
+        for server in servers:
+            now=self.TestSingleLatency(server['url']+"latency.txt?x=" + str( time.time() ))*1000
+            if now == -1:
+                continue
+            print "%0.0fms latency for %s (%s, %s, %s)" % (now, server['url'], server['sponsor'], server['name'], server['country'])
 
-    request=get_request(uri)
-    response = urllib2.urlopen(request);
-    size, start, end=chunk_read(response, report_hook=chunk_report)
+            if (now < shortest and shortest > 0) or shortest < 0:
+                shortest = now
+                po = server
 
-    conn.send([size, start, end])
-    conn.close()
+        print "Best server with average latency %0.0fms - %s, %s, %s" % (shortest, po['sponsor'], po['name'], po['country'])
+
+        return po
+
+
+    def TestSingleLatency(self, dest_addr):
+    # Checking latency for single server
+    # Does that by loading latency.txt (empty page)
+        request=self.GetRequest(dest_addr)
+        
+        averagetime=0
+        total=0
+        for i in range(self.latencycount):
+            error=0
+            startTime = time.time()
+            try:
+                response = urllib2.urlopen(request, timeout = 5)
+            except urllib2.URLError, e:
+                error=1
+
+            if error==0:
+                averagetime = averagetime + (time.time() - startTime)
+                total=total+1
+                
+            if total==0:
+                return False
+
+        return averagetime/total
+
+
+    def GetRequest(self, uri):
+    # Generates a GET request to be used with urlopen
+        req = urllib2.Request(uri, headers = self.headers)
+        return req
+
+
+    def PostRequest(self, uri, stream):
+    # Generate a POST request to be used with urlopen
+        req = urllib2.Request(uri, stream, headers = self.headers)
+        return req
+
+
+    def ChunkReport(self, bytes_so_far, chunk_size, total_size, num, th, d, w):
+    # Receiving status update from download/upload thread
+        if w==1:
+            return
+        d[num]=bytes_so_far
+        down=0
+        for i in range(th):
+            down=down+d.get(i, 0)
+
+        if num==0 or down >= total_size*th:
+
+            percent = float(down) / (total_size*th)
+            percent = round(percent*100, 2)
+
+            sys.stdout.write("Downloaded %d of %d bytes (%0.2f%%) in %d threads\r" %
+               (down, total_size*th, percent, th))
+
+        #if down >= total_size*th:
+        #   sys.stdout.write('\n')
+
+
+    def ChunkRead(self, response, num, th, d, w=0, chunk_size=8192, report_hook=None):
+        total_size = response.info().getheader('Content-Length').strip()
+        total_size = int(total_size)
+        bytes_so_far = 0
+
+        start = time.time()
+        while 1:
+          chunk = response.read(chunk_size)
+          bytes_so_far += len(chunk)
+          if not chunk:
+             break
+          if report_hook:
+             report_hook(bytes_so_far, chunk_size, total_size, num, th, d, w)
+        end = time.time()
+
+        return [ bytes_so_far, start, end ]
+
+
+    def AsyncGet(self, conn, uri, num, th, d):
+
+        request=self.GetRequest(uri)
+        response = urllib2.urlopen(request, timeout = 30);
+        size, start, end=self.ChunkRead(response, num, th, d, report_hook=self.ChunkReport)
+
+        conn.send([size, start, end])
+        conn.close()
+
+
+    def AsyncPost(self, conn, uri, num, th, d):
+        postlen=len(self.postData)
+        stream = CallbackStringIO(num, th, d, self.postData)
+        request=self.PostRequest(uri, stream)
+
+        start=0
+        end=0
+
+        try:
+            response = urllib2.urlopen(request,  timeout = 30);
+        
+            size, start, end=self.ChunkRead(response, num, th, d, 1, report_hook=self.ChunkReport)
+        
+        except urllib2.URLError, e:
+            print "Failed uploading..."
+
+        conn.send([postlen, start, end])
+        conn.close()
+
+
+    def LoadConfig(self):
+    # Load the configuration file
+        print "Loading speedtest configuration..."
+        uri = "http://speedtest.net/speedtest-config.php?x=" + str( time.time() )
+        request=self.GetRequest(uri)
+        response = urllib2.urlopen(request)
+
+        # Load etree from XML data
+        config = etree.fromstring(self.DecompressResponse(response))
+        
+        ip=config.find("client").attrib['ip']
+        isp=config.find("client").attrib['isp']
+        lat=float(config.find("client").attrib['lat'])
+        lon=float(config.find("client").attrib['lon'])
+        
+        print "IP: %s; Lat: %f; Lon: %f; ISP: %s" % (ip, lat, lon, isp)
+        
+        return { 'ip': ip, 'lat': lat, 'lon': lon, 'isp': isp }
+        
+
+    def LoadServers(self):
+    # Load server list
+        print "Loading server list..."
+        uri = "http://speedtest.net/speedtest-servers.php?x=" + str( time.time() )
+        request=self.GetRequest(uri)
+        response = urllib2.urlopen(request);
+
+        # Load etree from XML data
+        servers_xml = etree.fromstring(self.DecompressResponse(response))
+        servers=servers_xml.find("servers").findall("server")
+        server_list=[]
+
+        for server in servers:
+            server_list.append({
+            'lat': float(server.attrib['lat']), 
+            'lon': float(server.attrib['lon']),
+            'url': server.attrib['url'][:-10], 
+            'url2': server.attrib['url2'][:-10], 
+            'name': server.attrib['name'], 
+            'country': server.attrib['country'], 
+            'sponsor': server.attrib['sponsor'], 
+            'id': server.attrib['id'], 
+            })
+
+        return server_list
+
+
+    def DecompressResponse(sefl, response):
+    # Decompress gzipped response
+        data = StringIO(response.read())
+        gzipper = gzip.GzipFile(fileobj=data)
+        return gzipper.read()
+
+
+    def FindBestServer(self):
+        print "Looking for closest and best server..."
+        best=self.TestLatency(self.Closest([self.config['lat'], self.config['lon']], self.server_list))
+        self.server=best['url']
+        print "Best server: ", self.server
+
+
+    def TestUpload(self):
+    # Testing upload speed
+
+        num=2
+        getone=self.server+"upload.php?x=" + str( time.time() )
+        
+        self.postData=urllib.urlencode({'upload6': ''.join(random.choice(string.ascii_uppercase) for x in range(1024*1024)) })
+
+        start=time.time()
+
+        connections=[]
+        d=Manager().dict()
+        for i in range(num):
+            connection={}
+            connection['parent'], connection['child']= Pipe()
+            connection['connection'] = Process(target=self.AsyncPost, args=(connection['child'], getone, i, num, d))
+            connection['connection'].start()
+            connections.append(connection)
+
+        for c in range(num):
+            connections[c]['size'], connections[c]['start'], connections[c]['end']=connections[c]['parent'].recv()
+            connections[c]['connection'].join()
+
+        end=time.time()
+        
+        sys.stdout.write('                                                                                           \r')
+
+        sizes=0
+        tspeed=0
+        for c in range(num):
+            if connections[c]['end'] is not False:
+                tspeed=tspeed+(connections[c]['size']/(connections[c]['end']-connections[c]['start']))
+                sizes=sizes+connections[c]['size']
+        took=end-start
+        print "Upload size: %0.2f MB; Uploaded in upload: %0.2f s" % (sizes/1024/1024, took)
+        print "Upload speed: %0.2f MB/s" % ((sizes/1024/1024)/took)
+
+
+    def TestDownload(self):
+    # Testing download speed
+
+        num=4
+        getone=self.server+"random1500x1500.jpg?x=1348097022034&y=3"
+        start=time.time()
+        connections=[]
+        d=Manager().dict()
+        for i in range(num):
+            connection={}
+            connection['parent'], connection['child']= Pipe()
+            connection['connection'] = Process(target=self.AsyncGet, args=(connection['child'], getone, i, num, d))
+            connection['connection'].start()
+            connections.append(connection)
+
+        for c in range(num):
+            connections[c]['size'], connections[c]['start'], connections[c]['end']=connections[c]['parent'].recv()
+            connections[c]['connection'].join()
+
+        end=time.time()
+
+        sizes=0
+        tspeed=0
+        for c in range(num):
+            tspeed=tspeed+(connections[c]['size']/(connections[c]['end']-connections[c]['start']))
+            sizes=sizes+connections[c]['size']
+            
+        took=end-start
+        
+        sys.stdout.write('                                                                                           \r')
+
+        #print "Download speed (v2): ", tspeed/1024/1024, " MB/s"
+        print "Download size: %0.2f MB; Uploaded in upload: %0.2f s" % (sizes/1024/1024, took)
+        print "Download speed: %0.2f MB/s" % ((sizes/1024/1024)/took)
+
+
+    def TestSpeed(self):
+
+        if self.server == '':
+            self.config=self.LoadConfig()
+            self.server_list=self.LoadServers()
+            self.FindBestServer()
+            
+        self.TestDownload()
+        self.TestUpload()
+
+
+def main(argv):
+    t=TeSpeed(len(argv)>1 and argv[1] or '')
 
 
 if __name__ == '__main__':
-
-    getone='http://speedtest1.datagrupa.lv/speedtest/random2000x2000.jpg?x=1333139184092&y=1'
-
-
-    info('main line')
-
-    start = time.time()
-    print start
-    print "Start", start
-
-
-    parent_conn1, child_conn1 = Pipe()
-    p = Process(target=async_get, args=(child_conn1, getone, ))
-
-    parent_conn2, child_conn2 = Pipe()
-    k = Process(target=async_get, args=(child_conn2, getone, ))
-
-    p.start()
-    k.start()
-
-    size1, start1, end1=parent_conn1.recv()
-    size2, start2, end2=parent_conn2.recv()
-    total_size=size1+size2
-
-    print "Total size: ", total_size
-
-    p.join()
-    k.join()
-
-
-    end = time.time()
-    print "whaat", end
-
-    time_elapsed=end - start
-
-    print "Time elapsed = ", time_elapsed, "seconds"
-
-    speed=( size1 + size2 ) / time_elapsed
-
-    print "Speed: ", speed / 1024, " Kbytes/sec"
-
-    speed1=( size1 / ( end1 - start1 ) ) / 1024
-    speed2=( size2 / ( end2 - start2 ) ) / 1024
-
-    print "Better speed1", speed1
-    print "Better speed2", speed2
-
-    print "Total speed: ", speed1 + speed2, " KB/s"
-
-    #print "Better speed: ", ( size1 + size2 ) / ( end1 - start1 ) + 
-
-
-
+    main(sys.argv)
 
