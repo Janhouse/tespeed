@@ -47,8 +47,6 @@ TODO:
 
  *  Add error checking.
  *  Make it less messy.
- *  Make it run various tests with different download and upload data ammount 
-    to get better results.
  *  Send found results to speedtest.net API (needs some hash?) and get the link
     to the generated image.
  *  Store the measurement data and draw graphs.
