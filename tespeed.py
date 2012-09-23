@@ -311,7 +311,7 @@ class TeSpeed:
         print "Looking for closest and best server..."
         best=self.TestLatency(self.Closest([self.config['lat'], self.config['lon']], self.server_list, self.bestServers))
         self.server=best['url']
-        print "Best server: ", self.server
+        print "\033[94mBest server: ", self.server, "\033[0m"
 
 
     def AsyncRequest(self, url, num, upload=0):
@@ -357,14 +357,14 @@ class TeSpeed:
             self.postData=urllib.urlencode({'upload6': ''.join(random.choice(string.ascii_uppercase) for x in range(self.upSizes[i])) })
 
             sizes, took=self.AsyncRequest(url, 2, 1)
-            print "Upload size: %0.2f MiB; Uploaded in upload: %0.2f s" % (sizes/1024/1024, took)
-            print "Upload speed: %0.2f MiB/s" % ((sizes/1024/1024)/took)
+            print "Upload size: %0.2f MiB; Uploaded in %0.2f s" % (float(sizes)/1024/1024, took)
+            print "\033[92mUpload speed: %0.2f MiB/s\033[0m" % ((float(sizes)/1024/1024)/took)
 
             if took>5:
                 break
                 
-        #print "Upload size: %0.2f MiB; Uploaded in upload: %0.2f s" % (sizes/1024/1024, took)
-        #print "Upload speed: %0.2f MiB/s" % ((sizes/1024/1024)/took)
+        #print "Upload size: %0.2f MiB; Uploaded in %0.2f s" % (float(sizes)/1024/1024, took)
+        #print "Upload speed: %0.2f MiB/s" % ((float(sizes)/1024/1024)/took)
 
 
     def TestDownload(self):
@@ -374,15 +374,15 @@ class TeSpeed:
             url=self.server+"random"+self.downList[i]+".jpg?x=1348097022034&y=3"
             #print url
             sizes, took=self.AsyncRequest(url, i<1 and 2 or (i>7 and 6 or 4))
-
-            print "Download size: %0.2f MiB; Uploaded in upload: %0.2f s" % (sizes/1024/1024, took)
-            print "Download speed: %0.2f MiB/s" % ((sizes/1024/1024)/took)
+            
+            print("Download size: %0.2f MiB; Downloaded in %0.2f s") % (float(sizes)/1024/1024, took)
+            print("\033[91mDownload speed: %0.2f MiB/s\033[0m") % ((float(sizes)/1024/1024)/took)
 
             if took>7:
                 break
 
-        #print "Download size: %0.2f MiB; Uploaded in upload: %0.2f s" % (sizes/1024/1024, took)
-        #print "Download speed: %0.2f MiB/s" % ((sizes/1024/1024)/took)
+        #print "Download size: %0.2f MiB; Downloaded in %0.2f s" % (float(sizes)/1024/1024, took)
+        #print "Download speed: %0.2f MiB/s" % ((float(sizes)/1024/1024)/took)
 
     def TestSpeed(self):
 
