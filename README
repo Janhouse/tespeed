@@ -45,13 +45,13 @@ What the script does:
 
 TODO:
 
- *  Add error checking.
+ *  Add more error checking.
  *  Make it less messy.
  *  Send found results to speedtest.net API (needs some hash?) and get the link
     to the generated image.
  *  Store the measurement data and draw graphs.
  *  Measure the speed for the whole network interface (similar like it was in the
     old version of Tespeed).
- *  Random data generator uses too much resources.
+
 
 

@@ -79,10 +79,13 @@ class TeSpeed:
         self.latencycount=10
         self.bestServers=5
         self.numTop=int(numTop)
-        self.downList=['350x350', '500x500', '750x750', '1000x1000', 
-            '1500x1500', '2000x2000', '2500x2500', '3000x3000', 
-            '3500x3500', '4000x4000']
-        self.upSizes=[1024*512, 1024*1024, 1024*1024*2, 1024*1024*4]
+        self.downList=['350x350', '500x500', '750x750', '1000x1000',
+            '1500x1500', '2000x2000', '2000x2000', '2500x2500', '3000x3000',
+            '3500x3500', '4000x4000', '4000x4000', '4000x4000', '4000x4000']
+        self.upSizes=[1024*256, 1024*256, 1024*512, 1024*512, 
+            1024*1024, 1024*1024, 1024*1024*2, 1024*1024*2, 
+            1024*1024*2, 1024*1024*2]
+
         self.postData=""
         self.TestSpeed()
 
@@ -353,10 +356,14 @@ class TeSpeed:
         url=self.server+"upload.php?x=" + str( time.time() )
 
         sizes, took=[0,0]
+        data=""
         for i in range(0, len(self.upSizes)):
-            self.postData=urllib.urlencode({'upload6': ''.join(random.choice(string.ascii_uppercase) for x in range(self.upSizes[i])) })
+            if len(data) == 0 or self.upSizes[i] != self.upSizes[i-1]:
+                #print "Generating new string to upload. Length: ", self.upSizes[i]
+                data=''.join("1" for x in xrange(self.upSizes[i]))
+            self.postData=urllib.urlencode({'upload6': data })
 
-            sizes, took=self.AsyncRequest(url, 2, 1)
+            sizes, took=self.AsyncRequest(url, (i<4 and 1 or (i<6 and 2 or (i<6 and 4 or 8))), 1)
             print "Upload size: %0.2f MiB; Uploaded in %0.2f s" % (float(sizes)/1024/1024, took)
             print "\033[92mUpload speed: %0.2f MiB/s\033[0m" % ((float(sizes)/1024/1024)/took)
 
@@ -371,14 +378,14 @@ class TeSpeed:
     # Testing download speed
         sizes, took=[0,0]
         for i in range(0, len(self.downList)):
-            url=self.server+"random"+self.downList[i]+".jpg?x=1348097022034&y=3"
+            url=self.server+"random"+self.downList[i]+".jpg?x=" + str( time.time() ) + "&y=3"
             #print url
-            sizes, took=self.AsyncRequest(url, i<1 and 2 or (i>7 and 6 or 4))
+            sizes, took=self.AsyncRequest(url, (i<1 and 2 or (i<6 and 4 or (i<10 and 6 or 8))) )
             
             print("Download size: %0.2f MiB; Downloaded in %0.2f s") % (float(sizes)/1024/1024, took)
             print("\033[91mDownload speed: %0.2f MiB/s\033[0m") % ((float(sizes)/1024/1024)/took)
 
-            if took>7:
+            if took>5:
                 break
 
         #print "Download size: %0.2f MiB; Downloaded in %0.2f s" % (float(sizes)/1024/1024, took)
