@@ -52,6 +52,9 @@ TODO:
  *  Store the measurement data and draw graphs.
  *  Measure the speed for the whole network interface (similar like it was in the
     old version of Tespeed).
-
+ *  Start upload timer only after 1st byte is read.
+ *  Figure out the ammount of data that was transfered only when all threads were
+    actively sendong/receiving data at the same time. (Should provide more precise 
+    test results.)
 
 

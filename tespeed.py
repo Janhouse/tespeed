@@ -187,7 +187,8 @@ class TeSpeed:
 
 
     def ChunkReport(self, bytes_so_far, chunk_size, total_size, num, th, d, w):
-    # Receiving status update from download/upload thread
+    # Receiving status update from download thread
+
         if w==1:
             return
         d[num]=bytes_so_far
@@ -208,21 +209,29 @@ class TeSpeed:
 
 
     def ChunkRead(self, response, num, th, d, w=0, chunk_size=10240, report_hook=None):
-
+        #print "Thread num ", th, num, d, " starting to report\n"
         if(w==1):
             return [0,0,0]
+
         total_size = response.info().getheader('Content-Length').strip()
         total_size = int(total_size)
         bytes_so_far = 0
 
-        start = time.time()
+        start=0
         while 1:
-          chunk = response.read(chunk_size)
-          bytes_so_far += len(chunk)
-          if not chunk:
-             break
-          if report_hook:
-             report_hook(bytes_so_far, chunk_size, total_size, num, th, d, w)
+            chunk=0
+            if start == 0:
+                #print "Started receiving data"
+                chunk = response.read(1)
+                start = time.time()
+                
+            else:
+                chunk = response.read(chunk_size)
+            if not chunk:
+                break
+            bytes_so_far += len(chunk)
+            if report_hook:
+                report_hook(bytes_so_far, chunk_size, total_size, num, th, d, w)
         end = time.time()
 
         return [ bytes_so_far, start, end ]
@@ -346,8 +355,20 @@ class TeSpeed:
             if connections[c]['end'] is not False:
                 #tspeed=tspeed+(connections[c]['size']/(connections[c]['end']-connections[c]['start']))
                 sizes=sizes+connections[c]['size']
+                
+                # Using more precise times for downloads
+                if upload==0:
+                    if c==0:
+                        start=connections[c]['start']
+                        end=connections[c]['end']
+                    else:
+                        if connections[c]['start'] < start:
+                            start=connections[c]['start']
+                        if connections[c]['end'] > end:
+                            end=connections[c]['end']
+
         took=end-start
-        
+
         return [sizes, took]
 
     def TestUpload(self):
