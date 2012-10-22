@@ -271,6 +271,7 @@ class TeSpeed:
         uri = "http://speedtest.net/speedtest-config.php?x=" + str( time.time() )
         request=self.GetRequest(uri)
         response = urllib2.urlopen(request)
+  
 
         # Load etree from XML data
         config = etree.fromstring(self.DecompressResponse(response))
@@ -436,8 +437,11 @@ class TeSpeed:
             print "%s. %s (%s, %s, %s) [%0.2f km]" % (i+1, allSorted[i]['url'], allSorted[i]['sponsor'], allSorted[i]['name'], allSorted[i]['country'], allSorted[i]['distance'])
 
 def main(argv):
-    t=TeSpeed(len(argv)>1 and argv[1] or '', len(argv)>2 and argv[2])
-
+    try:
+        t=TeSpeed(len(argv)>1 and argv[1] or '', len(argv)>2 and argv[2])
+    except (KeyboardInterrupt, SystemExit):
+        print "\nTesting stopped."
+        #raise
 
 if __name__ == '__main__':
     main(sys.argv)
