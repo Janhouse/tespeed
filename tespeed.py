@@ -3,7 +3,6 @@
 # Copyright 2012 Janis Jansons (janis.jansons@janhouse.lv)
 #
 
-import os
 import urllib
 import urllib2
 import gzip
@@ -11,10 +10,6 @@ import sys
 from multiprocessing import Process, Pipe, Manager
 from lxml import etree
 import time
-import gzip
-import time
-import string
-import random
 from math import radians, cos, sin, asin, sqrt
 
 from StringIO import StringIO
@@ -136,7 +131,7 @@ class TeSpeed:
         for server in servers:
             now=self.TestSingleLatency(server['url']+"latency.txt?x=" + str( time.time() ))*1000
             now=now/2 # Evil hack or just pure stupidity? Nobody knows...
-            if now == -1:
+            if now == -1 or now == 0:
                 continue
             print "%0.0f ms latency for %s (%s, %s, %s) [%0.2f km]" % (now, server['url'], server['sponsor'], server['name'], server['country'], server['distance'])
 
@@ -445,4 +440,3 @@ def main(argv):
 
 if __name__ == '__main__':
     main(sys.argv)
-
