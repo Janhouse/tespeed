@@ -3,6 +3,7 @@
 # Copyright 2012 Janis Jansons (janis.jansons@janhouse.lv)
 #
 
+import argparse
 import urllib
 import urllib2
 import gzip
@@ -43,11 +44,11 @@ class CallbackStringIO(StringIO):
         if self.num==0:
             percent = float(down) / (self.total)
             percent = round(percent*100, 2)
-            sys.stdout.write("Uploaded %d of %d bytes (%0.2f%%) in %d threads\r" %
+            sys.stderr.write("Uploaded %d of %d bytes (%0.2f%%) in %d threads\r" %
                (down, self.total, percent, self.th))
 
         #if down >= self.total:
-        #    sys.stdout.write('\n')
+        #    sys.stderr.write('\n')
         #    self.d['done']=1
 
         return next
@@ -58,21 +59,24 @@ class CallbackStringIO(StringIO):
 
 class TeSpeed:
 
-    def __init__(self, server = "", numTop = 0):
+    def __init__(self, server = "", numTop = 0, store = False):
 
         self.headers = {
-        'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'User-Agent' : 'Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20100101 Firefox/11.0',
-        'Accept-Language' : 'en-us,en;q=0.5',
-        'Connection' : 'keep-alive',
-        'Accept-Encoding' : 'gzip, deflate',
-        #'Referer' : 'http://c.speedtest.net/flash/speedtest.swf?v=301256',
+            'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'User-Agent' : 'Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20100101 Firefox/11.0',
+            'Accept-Language' : 'en-us,en;q=0.5',
+            'Connection' : 'keep-alive',
+            'Accept-Encoding' : 'gzip, deflate',
+            #'Referer' : 'http://c.speedtest.net/flash/speedtest.swf?v=301256',
         }
 
         self.server=server
-        print "Getting ready"
+        #print >> sys.stderr, "Getting ready"
         self.latencycount=10
         self.bestServers=5
+        self.store=store
+        if store:
+            print >> sys.stderr, "Printing CSV formated results to STDOUT."
         self.numTop=int(numTop)
         self.downList=['350x350', '500x500', '750x750', '1000x1000',
             '1500x1500', '2000x2000', '2000x2000', '2500x2500', '3000x3000',
@@ -125,7 +129,7 @@ class TeSpeed:
 
     def TestLatency(self, servers):
     # Finding the server with lowest latency
-        print "Testing latency..."
+        print >> sys.stderr, "Testing latency..."
         shortest = -1.0
         po = []
         for server in servers:
@@ -133,13 +137,13 @@ class TeSpeed:
             now=now/2 # Evil hack or just pure stupidity? Nobody knows...
             if now == -1 or now == 0:
                 continue
-            print "%0.0f ms latency for %s (%s, %s, %s) [%0.2f km]" % (now, server['url'], server['sponsor'], server['name'], server['country'], server['distance'])
+            print >> sys.stderr, "%0.0f ms latency for %s (%s, %s, %s) [%0.2f km]" % (now, server['url'], server['sponsor'], server['name'], server['country'], server['distance'])
 
             if (now < shortest and shortest > 0) or shortest < 0:
                 shortest = now
                 po = server
 
-        print "Best server with average latency %0.0fms - %s, %s, %s" % (shortest, po['sponsor'], po['name'], po['country'])
+        print >> sys.stderr, "Best server with average latency %0.0fms - %s, %s, %s" % (shortest, po['sponsor'], po['name'], po['country'])
 
         return po
 
@@ -196,15 +200,15 @@ class TeSpeed:
             percent = float(down) / (total_size*th)
             percent = round(percent*100, 2)
 
-            sys.stdout.write("Downloaded %d of %d bytes (%0.2f%%) in %d threads\r" %
+            sys.stderr.write("Downloaded %d of %d bytes (%0.2f%%) in %d threads\r" %
                (down, total_size*th, percent, th))
 
         #if down >= total_size*th:
-        #   sys.stdout.write('\n')
+        #   sys.stderr.write('\n')
 
 
     def ChunkRead(self, response, num, th, d, w=0, chunk_size=10240, report_hook=None):
-        #print "Thread num ", th, num, d, " starting to report\n"
+        #print >> sys.stderr, "Thread num ", th, num, d, " starting to report\n"
         if(w==1):
             return [0,0,0]
 
@@ -216,7 +220,7 @@ class TeSpeed:
         while 1:
             chunk=0
             if start == 0:
-                #print "Started receiving data"
+                #print >> sys.stderr, "Started receiving data"
                 chunk = response.read(1)
                 start = time.time()
                 
@@ -235,8 +239,22 @@ class TeSpeed:
     def AsyncGet(self, conn, uri, num, th, d):
 
         request=self.GetRequest(uri)
-        response = urllib2.urlopen(request, timeout = 30);
-        size, start, end=self.ChunkRead(response, num, th, d, report_hook=self.ChunkReport)
+        
+        start=0
+        end=0
+        size=0
+        
+        try:
+            response = urllib2.urlopen(request, timeout = 30);
+            size, start, end=self.ChunkRead(response, num, th, d, report_hook=self.ChunkReport)
+        #except urllib2.URLError, e:
+        #    print >> sys.stderr, "Failed downloading."
+        except:
+            sys.stderr.write('                                                                                           \r')
+            print >> sys.stderr, "Failed downloading."
+            conn.send([0, 0, False])
+            conn.close()
+            return
 
         conn.send([size, start, end])
         conn.close()
@@ -253,8 +271,14 @@ class TeSpeed:
         try:
             response = urllib2.urlopen(request,  timeout = 30);
             size, start, end=self.ChunkRead(response, num, th, d, 1, report_hook=self.ChunkReport)
-        except urllib2.URLError, e:
-            print "Failed uploading..."
+        #except urllib2.URLError, e:
+        #    print >> sys.stderr, "Failed uploading."
+        except:
+            sys.stderr.write('                                                                                           \r')
+            print >> sys.stderr, "Failed uploading."
+            conn.send([0, 0, False])
+            conn.close()
+            return
 
         conn.send([postlen, start, end])
         conn.close()
@@ -262,7 +286,7 @@ class TeSpeed:
 
     def LoadConfig(self):
     # Load the configuration file
-        print "Loading speedtest configuration..."
+        print >> sys.stderr, "Loading speedtest configuration..."
         uri = "http://speedtest.net/speedtest-config.php?x=" + str( time.time() )
         request=self.GetRequest(uri)
         response = urllib2.urlopen(request)
@@ -276,14 +300,14 @@ class TeSpeed:
         lat=float(config.find("client").attrib['lat'])
         lon=float(config.find("client").attrib['lon'])
         
-        print "IP: %s; Lat: %f; Lon: %f; ISP: %s" % (ip, lat, lon, isp)
+        print >> sys.stderr, "IP: %s; Lat: %f; Lon: %f; ISP: %s" % (ip, lat, lon, isp)
         
         return { 'ip': ip, 'lat': lat, 'lon': lon, 'isp': isp }
         
 
     def LoadServers(self):
     # Load server list
-        print "Loading server list..."
+        print >> sys.stderr, "Loading server list..."
         uri = "http://speedtest.net/speedtest-servers.php?x=" + str( time.time() )
         request=self.GetRequest(uri)
         response = urllib2.urlopen(request);
@@ -316,10 +340,10 @@ class TeSpeed:
 
 
     def FindBestServer(self):
-        print "Looking for closest and best server..."
+        print >> sys.stderr, "Looking for closest and best server..."
         best=self.TestLatency(self.Closest([self.config['lat'], self.config['lon']], self.server_list, self.bestServers))
         self.server=best['url']
-        print "\033[94mBest server: ", self.server, "\033[0m"
+        print >> sys.stderr, "\033[94mBest server: ", self.server, "\033[0m"
 
 
     def AsyncRequest(self, url, num, upload=0):
@@ -343,7 +367,7 @@ class TeSpeed:
 
         end=time.time()
         
-        sys.stdout.write('                                                                                           \r')
+        sys.stderr.write('                                                                                           \r')
 
         sizes=0
         #tspeed=0
@@ -376,19 +400,21 @@ class TeSpeed:
         data=""
         for i in range(0, len(self.upSizes)):
             if len(data) == 0 or self.upSizes[i] != self.upSizes[i-1]:
-                #print "Generating new string to upload. Length: ", self.upSizes[i]
+                #print >> sys.stderr, "Generating new string to upload. Length: ", self.upSizes[i]
                 data=''.join("1" for x in xrange(self.upSizes[i]))
             self.postData=urllib.urlencode({'upload6': data })
 
             sizes, took=self.AsyncRequest(url, (i<4 and 1 or (i<6 and 2 or (i<6 and 4 or 8))), 1)
-            print "Upload size: %0.2f MiB; Uploaded in %0.2f s" % (float(sizes)/1024/1024, took)
-            print "\033[92mUpload speed: %0.2f MiB/s\033[0m" % ((float(sizes)/1024/1024)/took)
+            if sizes==0:
+                continue
+            print >> sys.stderr, "Upload size: %0.2f MiB; Uploaded in %0.2f s" % (float(sizes)/1024/1024, took)
+            print >> sys.stderr, "\033[92mUpload speed: %0.2f MiB/s\033[0m" % ((float(sizes)/1024/1024)/took)
 
             if took>5:
                 break
                 
-        #print "Upload size: %0.2f MiB; Uploaded in %0.2f s" % (float(sizes)/1024/1024, took)
-        #print "Upload speed: %0.2f MiB/s" % ((float(sizes)/1024/1024)/took)
+        #print >> sys.stderr, "Upload size: %0.2f MiB; Uploaded in %0.2f s" % (float(sizes)/1024/1024, took)
+        #print >> sys.stderr, "Upload speed: %0.2f MiB/s" % ((float(sizes)/1024/1024)/took)
 
 
     def TestDownload(self):
@@ -396,17 +422,18 @@ class TeSpeed:
         sizes, took=[0,0]
         for i in range(0, len(self.downList)):
             url=self.server+"random"+self.downList[i]+".jpg?x=" + str( time.time() ) + "&y=3"
-            #print url
+            #print >> sys.stderr, url
             sizes, took=self.AsyncRequest(url, (i<1 and 2 or (i<6 and 4 or (i<10 and 6 or 8))) )
-            
-            print("Download size: %0.2f MiB; Downloaded in %0.2f s") % (float(sizes)/1024/1024, took)
-            print("\033[91mDownload speed: %0.2f MiB/s\033[0m") % ((float(sizes)/1024/1024)/took)
+            if sizes==0:
+                continue
+            print >> sys.stderr, ("Download size: %0.2f MiB; Downloaded in %0.2f s") % (float(sizes)/1024/1024, took)
+            print >> sys.stderr, ("\033[91mDownload speed: %0.2f MiB/s\033[0m") % ((float(sizes)/1024/1024)/took)
 
             if took>5:
                 break
 
-        #print "Download size: %0.2f MiB; Downloaded in %0.2f s" % (float(sizes)/1024/1024, took)
-        #print "Download speed: %0.2f MiB/s" % ((float(sizes)/1024/1024)/took)
+        #print >> sys.stderr, "Download size: %0.2f MiB; Downloaded in %0.2f s" % (float(sizes)/1024/1024, took)
+        #print >> sys.stderr, "Download speed: %0.2f MiB/s" % ((float(sizes)/1024/1024)/took)
 
     def TestSpeed(self):
 
@@ -431,12 +458,23 @@ class TeSpeed:
         for i in range(0, len(allSorted)):
             print "%s. %s (%s, %s, %s) [%0.2f km]" % (i+1, allSorted[i]['url'], allSorted[i]['sponsor'], allSorted[i]['name'], allSorted[i]['country'], allSorted[i]['distance'])
 
-def main(argv):
+def main(args):
+    if args.listservers!=True and args.server=='' and args.store!=True:
+        print >> sys.stderr, "Getting ready. Use parameter -h or --help to see available features."
+    else:
+        print >> sys.stderr, "Getting ready"
     try:
-        t=TeSpeed(len(argv)>1 and argv[1] or '', len(argv)>2 and argv[2])
+        t=TeSpeed(args.listservers and 'list-servers' or args.server, args.listservers, args.store and True or False)
     except (KeyboardInterrupt, SystemExit):
-        print "\nTesting stopped."
+        print >> sys.stderr, "\nTesting stopped."
         #raise
 
 if __name__ == '__main__':
-    main(sys.argv)
+    parser = argparse.ArgumentParser(description='TeSpeed, CLI SpeedTest.net')
+
+    parser.add_argument('server', nargs='?', type=str, default='', help='Use the specified server for testing (skip checking for location and closest server).')
+    parser.add_argument('-ls', '--list-servers', dest='listservers', nargs='?', default=0, const=10, help='List the servers sorted by distance, nearest first. Optionally specify number of servers to show.')
+    parser.add_argument('-w', '--csv', dest='store', action='store_const', const=True, help='Print CSV formated output to STDOUT')
+
+    args = parser.parse_args()
+    main(args)
