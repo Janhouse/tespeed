@@ -497,12 +497,12 @@ class TeSpeed:
 
 def print_debug(string):
     if args.suppress!=True:
-        sys.stderr.write(string)
+        sys.stderr.write(string.encode('utf8'))
     #return
 
 def print_result(string):
     if args.store==True:
-        sys.stdout.write(string)
+        sys.stdout.write(string.encode('utf8'))
     #return
 
 def main(args):
