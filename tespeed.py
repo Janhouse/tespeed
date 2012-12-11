@@ -72,6 +72,8 @@ class TeSpeed:
 
         self.num_servers=servercount;
         self.servers=[]
+        if server != "":
+            self.servers=[server]
 
         self.server=server
         self.down_speed=-1
