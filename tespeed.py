@@ -143,7 +143,6 @@ class TeSpeed:
     def TestLatency(self, servers):
     # Finding servers with lowest latency
         print_debug("Testing latency...\n")
-        
         po = []
         for server in servers:
             now=self.TestSingleLatency(server['url']+"latency.txt?x=" + str( time.time() ))*1000
@@ -156,8 +155,7 @@ class TeSpeed:
             server['latency']=now
 
             # Pick specified ammount of servers with best latency for testing
-
-            if len(po) < self.num_servers:
+            if int(len(po)) < int(self.num_servers):
                 po.append(server)
             else:
                 largest = -1
