@@ -24,8 +24,7 @@ Tespeed (terminal speedtest) - Copyright 2012 Janis Jansons (janis.jansons@janho
 Requirements:
 
     This script requires lxml and argparse Python2 modules.
-    Install python-lxml and python-argparse (Debian) or python2-lxml and 
-    python2-argparse (Archlinux).
+    Install python-lxml and python-argparse (Debian) or python2-lxml (Archlinux).
 
 
 Usage:
