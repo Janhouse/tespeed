@@ -21,10 +21,35 @@ Tespeed (terminal speedtest) - Copyright 2012 Janis Jansons (janis.jansons@janho
     ads could probably make them a bit happier). :)
 
 
-Installing:
+Requirements:
 
-    This script requires lxml Python2 module
-    install python-lxml (Debian) or python2-lxml (Archlinux)
+    This script requires lxml and argparse Python2 modules.
+    Install python-lxml and python-argparse (Debian) or python2-lxml and 
+    python2-argparse (Archlinux).
+
+
+Usage:
+
+    tespeed.py [-h] [-ls [LISTSERVERS]] [-w] [-s] [-mib] [-n [SERVERCOUNT]] [server]
+
+    TeSpeed, CLI SpeedTest.net
+
+    positional arguments:
+      server                Use the specified server for testing (skip checking
+                            for location and closest server).
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -ls [LISTSERVERS], --list-servers [LISTSERVERS]
+                            List the servers sorted by distance, nearest first.
+                            Optionally specify number of servers to show.
+      -w, --csv             Print CSV formated output to STDOUT.
+      -s, --suppress        Suppress debugging (STDERR) output.
+      -mib, --mebibit       Show results in mebibits.
+      -n [SERVERCOUNT], --server-count [SERVERCOUNT]
+                            Specify how many different servers should be used in
+                            paralel. (Defaults to 1.) (Increase it for >100Mbit
+                            testing.)
 
 
 What the script does:
@@ -41,6 +66,8 @@ What the script does:
  *  Does download speed test and returns results.
 
  *  Does upload speed test and returns results.
+
+ *  Optionally can return CSV formated results.
 
 
 TODO:
