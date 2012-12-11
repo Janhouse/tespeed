@@ -542,7 +542,7 @@ if __name__ == '__main__':
     parser.add_argument('-w', '--csv', dest='store', action='store_const', const=True, help='Print CSV formated output to STDOUT.')
     parser.add_argument('-s', '--suppress', dest='suppress', action='store_const', const=True, help='Suppress debugging (STDERR) output.')
     parser.add_argument('-mib', '--mebibit', dest='unit', action='store_const', const=True, help='Show results in mebibits.')
-    parser.add_argument('-n', '--server-count', dest='servercount', nargs='?', default=3, const=3, help='Specify how many different servers should be used in paralel. (Defaults to 3.) (Increase it for >100Mbit testing.)')
+    parser.add_argument('-n', '--server-count', dest='servercount', nargs='?', default=1, const=1, help='Specify how many different servers should be used in paralel. (Defaults to 1.) (Increase it for >100Mbit testing.)')
 
     args = parser.parse_args()
     main(args)
