@@ -4,6 +4,10 @@
 #
 
 import argparse
+
+from SocksiPy import socks
+import socket
+
 import urllib
 import urllib2
 import gzip
@@ -593,6 +597,9 @@ def print_result(string):
 
 def main(args):
 
+    socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 12345, True)
+    socket.socket = socks.socksocket
+
     if args.listservers:
         args.store=True
 
@@ -615,6 +622,8 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--suppress', dest='suppress', action='store_const', const=True, help='Suppress debugging (STDERR) output.')
     parser.add_argument('-mib', '--mebibit', dest='unit', action='store_const', const=True, help='Show results in mebibits.')
     parser.add_argument('-n', '--server-count', dest='servercount', nargs='?', default=1, const=1, help='Specify how many different servers should be used in paralel. (Defaults to 1.) (Increase it for >100Mbit testing.)')
+
+    parser.add_argument('-i', '--interface', dest='interface', nargs='?', help='If specified, measures speed from data for the whole network interface.')
 
     args = parser.parse_args()
     main(args)
