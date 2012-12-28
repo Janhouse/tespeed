@@ -8,6 +8,14 @@ import argparse
 from SocksiPy import socks
 import socket
 
+socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 12345)
+socket.socket = socks.socksocket
+
+# Magic!
+def getaddrinfo(*args):
+    return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (args[0], args[1]))]
+socket.getaddrinfo = getaddrinfo
+
 import urllib
 import urllib2
 import gzip
@@ -596,9 +604,6 @@ def print_result(string):
     #return
 
 def main(args):
-
-    socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 12345, True)
-    socket.socket = socks.socksocket
 
     if args.listservers:
         args.store=True
