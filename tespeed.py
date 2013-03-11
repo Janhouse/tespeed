@@ -383,7 +383,7 @@ class TeSpeed:
             'lat': float(server.attrib['lat']), 
             'lon': float(server.attrib['lon']),
             'url': server.attrib['url'].rsplit('/', 1)[0] + '/',
-            'url2': server.attrib['url2'].rsplit('/', 1)[0] + '/',
+            #'url2': server.attrib['url2'].rsplit('/', 1)[0] + '/',
             'name': server.attrib['name'], 
             'country': server.attrib['country'], 
             'sponsor': server.attrib['sponsor'], 
