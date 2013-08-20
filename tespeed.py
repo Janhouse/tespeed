@@ -1,22 +1,17 @@
 #!/usr/bin/env python2
 #
-# Copyright 2012 Janis Jansons (janis.jansons@janhouse.lv)
+# Copyright 2012-2013 Janis Jansons (janis.jansons@janhouse.lv)
 #
 
 import argparse
 
-
 from SocksiPy import socks
 import socket
 
-socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 12345)
-socket.socket = socks.socksocket
-
-# Magic! (http://stackoverflow.com/questions/13184205/dns-over-proxy)
+# Magic!
 def getaddrinfo(*args):
     return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (args[0], args[1]))]
 socket.getaddrinfo = getaddrinfo
-
 
 import urllib
 import urllib2
@@ -605,7 +600,18 @@ def print_result(string):
         sys.stdout.write(string.encode('utf8'))
     #return
 
+# Thx to Ryan Sears for http://bit.ly/17HhSli
+def set_proxy(typ=socks.PROXY_TYPE_SOCKS4, host="127.0.0.1", port=9050):
+    socks.setdefaultproxy(typ, host, port)
+    socket.socket = socks.socksocket
+
 def main(args):
+
+    if args.use_proxy:
+        if args.use_proxy==5:
+            set_proxy(typ=socks.PROXY_TYPE_SOCKS5, host=args.proxy_host, port=args.proxy_port)
+        else:
+            set_proxy(typ=socks.PROXY_TYPE_SOCKS4, host=args.proxy_host, port=args.proxy_port)
 
     if args.listservers:
         args.store=True
@@ -630,7 +636,11 @@ if __name__ == '__main__':
     parser.add_argument('-mib', '--mebibit', dest='unit', action='store_const', const=True, help='Show results in mebibits.')
     parser.add_argument('-n', '--server-count', dest='servercount', nargs='?', default=1, const=1, help='Specify how many different servers should be used in paralel. (Defaults to 1.) (Increase it for >100Mbit testing.)')
 
-    parser.add_argument('-i', '--interface', dest='interface', nargs='?', help='If specified, measures speed from data for the whole network interface.')
+    parser.add_argument('-p', '--proxy', dest='use_proxy', type=int, nargs='?', const=4, help='Specify 4 or 5 to use SOCKS4 or SOCKS5 proxy.')
+    parser.add_argument('-ph', '--proxy-host', dest='proxy_host', type=str, nargs='?', default='127.0.0.1', help='Specify socks proxy host (defaults to 127.0.0.1).')
+    parser.add_argument('-pp', '--proxy-port', dest='proxy_port', type=int, nargs='?', default=9050, help='Specify socks proxy port (defaults to 9050).')
+
+    #parser.add_argument('-i', '--interface', dest='interface', nargs='?', help='If specified, measures speed from data for the whole network interface.')
 
     args = parser.parse_args()
     main(args)
