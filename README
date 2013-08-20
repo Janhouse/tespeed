@@ -22,9 +22,24 @@ Tespeed (terminal speedtest) - Copyright 2012 Janis Jansons (janis.jansons@janho
 
 Requirements:
 
-    This script requires lxml and argparse Python2 modules.
+    This script requires recent Python (preferably 2.7 or newer) and Python2
+    modules lxml and argparse.
     Install python-lxml and python-argparse (Debian) or python2-lxml (Archlinux).
 
+Installation:
+
+    Remember to pull submodules.
+    
+    If you have a decent git version (1.6.5 and up), get everything by doing:
+
+        git clone --recursive git://github.com/Janhouse/tespeed.git
+        
+    Otherwise do:
+    
+        git clone git://github.com/Janhouse/tespeed.git
+        cd tespeed
+        git submodule init
+        git submodule update
 
 Usage:
 
