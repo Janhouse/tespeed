@@ -94,8 +94,6 @@ class TeSpeed:
         self.unit=0
         
         self.chunksize=chunksize
-        print "yolo"
-        print self.chunksize
         
         if unit:
             self.units="MiB"
@@ -234,7 +232,7 @@ class TeSpeed:
             startTime = time.time()
             try:
                 response = urllib2.urlopen(request, timeout = 5)
-            except (urllib2.URLError, e):
+            except urllib2.URLError, e:
                 error=1
 
             if error==0:
@@ -325,7 +323,7 @@ class TeSpeed:
         try:
             response = urllib2.urlopen(request, timeout = 30);
             size, start, end=self.ChunkRead(response, num, th, d, report_hook=self.ChunkReport)
-        #except (urllib2.URLError, e):
+        #except urllib2.URLError, e:
         #    print_debug("Failed downloading.\n")
         except:
             print_debug('                                                                                           \r')
@@ -349,7 +347,7 @@ class TeSpeed:
         try:
             response = urllib2.urlopen(request,  timeout = 30);
             size, start, end=self.ChunkRead(response, num, th, d, 1, report_hook=self.ChunkReport)
-        #except (urllib2.URLError, e):
+        #except urllib2.URLError, e:
         #    print_debug("Failed uploading.\n")
         except:
             print_debug('                                                                                           \r')
