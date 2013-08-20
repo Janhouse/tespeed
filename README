@@ -56,6 +56,10 @@ Usage:
                                 Specify socks proxy host (defaults to 127.0.0.1).
           -pp [PROXY_PORT], --proxy-port [PROXY_PORT]
                                 Specify socks proxy port (defaults to 9050).
+          -cs [CHUNKSIZE], --chunk-size [CHUNKSIZE]
+                                Specify chunk size after wich tespeed calculates
+                                speed. Increase this number 4 or 5 times if you use
+                                weak hardware like RaspberryPi. (Default: 10240)
 
 
 What the script does:
