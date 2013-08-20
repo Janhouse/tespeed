@@ -1,4 +1,3 @@
-
 Tespeed (terminal speedtest) - Copyright 2012 Janis Jansons (janis.jansons@janhouse.lv)
 
 
@@ -29,26 +28,34 @@ Requirements:
 
 Usage:
 
-    tespeed.py [-h] [-ls [LISTSERVERS]] [-w] [-s] [-mib] [-n [SERVERCOUNT]] [server]
-
-    TeSpeed, CLI SpeedTest.net
-
-    positional arguments:
-      server                Use the specified server for testing (skip checking
-                            for location and closest server).
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      -ls [LISTSERVERS], --list-servers [LISTSERVERS]
-                            List the servers sorted by distance, nearest first.
-                            Optionally specify number of servers to show.
-      -w, --csv             Print CSV formated output to STDOUT.
-      -s, --suppress        Suppress debugging (STDERR) output.
-      -mib, --mebibit       Show results in mebibits.
-      -n [SERVERCOUNT], --server-count [SERVERCOUNT]
-                            Specify how many different servers should be used in
-                            paralel. (Defaults to 1.) (Increase it for >100Mbit
-                            testing.)
+    usage: tespeed.py [-h] [-ls [LISTSERVERS]] [-w] [-s] [-mib] [-n [SERVERCOUNT]]
+                      [-p [USE_PROXY]] [-ph [PROXY_HOST]] [-pp [PROXY_PORT]]
+                      [server]
+    
+        TeSpeed, CLI SpeedTest.net
+    
+        positional arguments:
+          server                Use the specified server for testing (skip checking
+                                for location and closest server).
+        
+        optional arguments:
+          -h, --help            show this help message and exit
+          -ls [LISTSERVERS], --list-servers [LISTSERVERS]
+                                List the servers sorted by distance, nearest first.
+                                Optionally specify number of servers to show.
+          -w, --csv             Print CSV formated output to STDOUT.
+          -s, --suppress        Suppress debugging (STDERR) output.
+          -mib, --mebibit       Show results in mebibits.
+          -n [SERVERCOUNT], --server-count [SERVERCOUNT]
+                                Specify how many different servers should be used in
+                                paralel. (Defaults to 1.) (Increase it for >100Mbit
+                                testing.)
+          -p [USE_PROXY], --proxy [USE_PROXY]
+                                Specify 4 or 5 to use SOCKS4 or SOCKS5 proxy.
+          -ph [PROXY_HOST], --proxy-host [PROXY_HOST]
+                                Specify socks proxy host (defaults to 127.0.0.1).
+          -pp [PROXY_PORT], --proxy-port [PROXY_PORT]
+                                Specify socks proxy port (defaults to 9050).
 
 
 What the script does:
@@ -68,8 +75,9 @@ What the script does:
 
  *  Optionally can return CSV formated results.
 
+ *  Can measure through SOCKS proxy.
 
-TODO:
+TODO (ideas):
 
  *  Add more error checking.
  *  Make it less messy.
