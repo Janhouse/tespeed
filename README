@@ -28,18 +28,28 @@ Requirements:
 
 Installation:
 
-    Remember to pull submodules.
+    If you have Debian, you might have to change the python executable in tuper.py
+    or create a symlink for your existing python2.x executable by doing:
+    
+        sudo ln -s /usr/bin/python2.7 /usr/bin/python2
+        
+    If you have python2.6 then replace python2.7 with python2.6.
+    
+    
+
+    When doing the checkout, remember to pull submodules.
     
     If you have a decent git version (1.6.5 and up), get everything by doing:
 
         git clone --recursive git://github.com/Janhouse/tespeed.git
-        
+
     Otherwise do:
     
         git clone git://github.com/Janhouse/tespeed.git
         cd tespeed
         git submodule init
         git submodule update
+
 
 Usage:
 
