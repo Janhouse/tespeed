@@ -412,7 +412,11 @@ class TeSpeed:
     # Decompress gzipped response
         data = StringIO(response.read())
         gzipper = gzip.GzipFile(fileobj=data)
-        return gzipper.read()
+        try:
+            return gzipper.read()
+        except IOError as e:
+            # Response isn't gzipped, therefore return the data.
+            return data.getvalue()
 
 
     def FindBestServer(self):
