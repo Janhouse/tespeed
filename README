@@ -106,6 +106,14 @@ What the script does:
 
  *  Can measure through SOCKS proxy.
 
+
+Logging to file
+
+	Execute manually or add to crontab:
+	
+		echo $(date +"%Y-%m-%d,%H:%M"),$(./tespeed.py -w) >> speedtest-log.txt
+
+
 TODO (ideas):
 
  *  Add more error checking.
