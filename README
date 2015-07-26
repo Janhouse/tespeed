@@ -18,6 +18,10 @@ Tespeed (terminal speedtest) - Copyright 2012 Janis Jansons (janis.jansons@janho
     testing site out there - http://www.speedtest.net/
     Support them in any way you can (going to their website and clicking on
     ads could probably make them a bit happier). :)
+    
+    Also there is an ALTERNATIVE SPEEDTEST TOOL written in Python. It is better maintained 
+    and probably works with Python 3: https://github.com/sivel/speedtest-cli
+    If you don't need testing through socks proxy, go check it out. :)
 
 
 Requirements:
