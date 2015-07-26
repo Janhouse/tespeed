@@ -4,6 +4,7 @@
 #
 
 import argparse
+args=None
 
 from SocksiPy import socks
 import socket
