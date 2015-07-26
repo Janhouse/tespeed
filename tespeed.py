@@ -477,6 +477,7 @@ class TeSpeed:
         url="upload.php?x=" + str( time.time() )
 
         sizes, took=[0,0]
+        counter=0
         data=""
         for i in range(0, len(self.upSizes)):
             if len(data) == 0 or self.upSizes[i] != self.upSizes[i-1]:
@@ -515,8 +516,10 @@ class TeSpeed:
             
             if self.up_speed<speed:
                 self.up_speed=speed
+                
+            counter=counter+1
 
-            if took>5:
+            if took>5 or counter>8:
                 break
                 
         #print_debug("Upload size: %0.2f MiB; Uploaded in %0.2f s\n" % (self.SpeedConversion(sizes), took))
