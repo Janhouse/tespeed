@@ -234,7 +234,7 @@ class TeSpeed:
             startTime = time.time()
             try:
                 response = urllib2.urlopen(request, timeout = 5)
-            except urllib2.URLError, e:
+            except (urllib2.URLError, socket.timeout), e:
                 error=1
 
             if error==0:
@@ -367,8 +367,13 @@ class TeSpeed:
         print_debug("Loading speedtest configuration...\n")
         uri = "http://speedtest.net/speedtest-config.php?x=" + str( time.time() )
         request=self.GetRequest(uri)
-        response = urllib2.urlopen(request)
-  
+        response = None
+        try:
+            response = urllib2.urlopen(request, timeout=5)
+        except (urllib2.URLError, socket.timeout), e:
+            print_debug("Failed to get Speedtest.net config file.\n")
+            print_result("%0.2f,%0.2f,\"%s\",\"%s\"\n" % (self.down_speed, self.up_speed, self.units, self.servers))
+            sys.exit(1)
 
         # Load etree from XML data
         config = etree.fromstring(self.DecompressResponse(response))
@@ -388,7 +393,13 @@ class TeSpeed:
         print_debug("Loading server list...\n")
         uri = "http://speedtest.net/speedtest-servers.php?x=" + str( time.time() )
         request=self.GetRequest(uri)
-        response = urllib2.urlopen(request);
+        response=None
+        try:
+            response = urllib2.urlopen(request);
+        except (urllib2.URLError, socket.timeout), e:
+            print_debug("Failed to get Speedtest.net server list.\n")
+            print_result("%0.2f,%0.2f,\"%s\",\"%s\"\n" % (self.down_speed, self.up_speed, self.units, self.servers))
+            sys.exit(1)
 
         # Load etree from XML data
         servers_xml = etree.fromstring(self.DecompressResponse(response))
@@ -480,6 +491,7 @@ class TeSpeed:
 
         sizes, took=[0,0]
         counter=0
+        failures=0
         data=""
         for i in range(0, len(self.upSizes)):
             if len(data) == 0 or self.upSizes[i] != self.upSizes[i-1]:
@@ -506,7 +518,13 @@ class TeSpeed:
             
             sizes, took=self.AsyncRequest(url, thrds, 1)
             #sizes, took=self.AsyncRequest(url, (i<4 and 1 or (i<6 and 2 or (i<6 and 4 or 8))), 1)
+            
+            # Stop testing if too many failures            
+            counter=counter+1
             if sizes==0:
+                failures=failures+1
+                if failures>2:
+                    break
                 continue
 
             size=self.SpeedConversion(sizes)
@@ -518,10 +536,8 @@ class TeSpeed:
             
             if self.up_speed<speed:
                 self.up_speed=speed
-                
-            counter=counter+1
 
-            if took>5 or counter>8:
+            if took>5 or counter>10:
                 break
                 
         #print_debug("Upload size: %0.2f MiB; Uploaded in %0.2f s\n" % (self.SpeedConversion(sizes), took))
@@ -537,6 +553,8 @@ class TeSpeed:
     def TestDownload(self):
     # Testing download speed
         sizes, took=[0,0]
+        counter=0
+        failures=0
         for i in range(0, len(self.downList)):
             url="random"+self.downList[i]+".jpg?x=" + str( time.time() ) + "&y=3"
             
@@ -560,7 +578,13 @@ class TeSpeed:
             
             sizes, took=self.AsyncRequest(url, thrds )
             #sizes, took=self.AsyncRequest(url, (i<1 and 2 or (i<6 and 4 or (i<10 and 6 or 8))) )
+            
+            # Stop testing if too many failures            
+            counter=counter+1
             if sizes==0:
+                failures=failures+1
+                if failures>2:
+                    break
                 continue
 
             size=self.SpeedConversion(sizes)
@@ -573,7 +597,7 @@ class TeSpeed:
             if self.down_speed<speed:
                 self.down_speed=speed
 
-            if took>5:
+            if took>5 or counter>15:
                 break
 
         #print_debug("Download size: %0.2f MiB; Downloaded in %0.2f s\n" % (self.SpeedConversion(sizes), took))
