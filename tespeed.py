@@ -13,6 +13,8 @@ def getaddrinfo(*args):
     return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (args[0], args[1]))]
 socket.getaddrinfo = getaddrinfo
 
+socket.setdefaulttimeout(None)
+
 import urllib
 import urllib2
 import gzip
