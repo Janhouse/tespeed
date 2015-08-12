@@ -73,7 +73,7 @@ class CallbackStringIO(StringIO):
 
 class TeSpeed:
 
-    def __init__(self, server = "", numTop = 0, servercount = 3, store = False, suppress = False, unit = False, chunksize=10240):
+    def __init__(self, server = "", numTop = 0, servercount = 3, store = False, suppress = False, unit = False, chunksize=10240, downloadtests=15, uploadtests=10):
 
         self.headers = {
             'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -99,6 +99,9 @@ class TeSpeed:
         self.unit=0
         
         self.chunksize=chunksize
+        
+        self.downloadtests=downloadtests
+        self.uploadtests=uploadtests
         
         if unit:
             self.units="MiB"
@@ -540,7 +543,7 @@ class TeSpeed:
             if self.up_speed<speed:
                 self.up_speed=speed
 
-            if took>5 or counter>10:
+            if took>5 or counter>=self.uploadtests:
                 break
                 
         #print_debug("Upload size: %0.2f MiB; Uploaded in %0.2f s\n" % (self.SpeedConversion(sizes), took))
@@ -600,7 +603,7 @@ class TeSpeed:
             if self.down_speed<speed:
                 self.down_speed=speed
 
-            if took>5 or counter>15:
+            if took>5 or counter>=self.downloadtests:
                 break
 
         #print_debug("Download size: %0.2f MiB; Downloaded in %0.2f s\n" % (self.SpeedConversion(sizes), took))
@@ -669,7 +672,9 @@ def main(args):
             args.store and True or False, 
             args.suppress and True or False, 
             args.unit and True or False, 
-            chunksize=args.chunksize
+            chunksize=args.chunksize,
+            downloadtests=args.downloadtests, 
+            uploadtests=args.uploadtests, 
         )
     except (KeyboardInterrupt, SystemExit):
         print_debug("\nTesting stopped.\n")
@@ -690,6 +695,8 @@ if __name__ == '__main__':
     parser.add_argument('-pp', '--proxy-port', dest='proxy_port', type=int, nargs='?', default=9050, help='Specify socks proxy port. (Default: 9050)')
 
     parser.add_argument('-cs', '--chunk-size', dest='chunksize', nargs='?', type=int, default=10240, help='Specify chunk size after wich tespeed calculates speed. Increase this number 4 or 5 times if you use weak hardware like RaspberryPi. (Default: 10240)')
+    parser.add_argument('-dt', '--max-download-tests', dest='downloadtests', nargs='?', type=int, default=15, help='Specify maximum number of download tests to be performed. (Default: 15)')
+    parser.add_argument('-ut', '--max-upload-tests', dest='uploadtests', nargs='?', type=int, default=10, help='Specify maximum number of upload tests to be performed. (Default: 10)')
 
     #parser.add_argument('-i', '--interface', dest='interface', nargs='?', help='If specified, measures speed from data for the whole network interface.')
 
