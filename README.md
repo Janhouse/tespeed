@@ -29,7 +29,11 @@ Requirements:
 
     This script requires recent Python (preferably 2.7 or newer) and Python2
     modules lxml and argparse.
-    Install python-lxml and python-argparse (Debian) or python2-lxml (Archlinux).
+    Install python-lxml and python-argparse (Debian) 
+
+    $ sudo apt-get install python-lxml python-argparse
+
+    or python2-lxml (Archlinux).
 
 Installation:
 
