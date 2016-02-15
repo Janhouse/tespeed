@@ -652,6 +652,10 @@ def set_proxy(typ=socks.PROXY_TYPE_SOCKS4, host="127.0.0.1", port=9050):
 
 def main(args):
 
+    if args.version:
+        print_debug("Tespeed v1.1\nNetwork speedtest using speedtest.net infrastructure - https://github.com/Janhouse/tespeed\n")
+        sys.exit(0)
+
     if args.use_proxy:
         if args.use_proxy==5:
             set_proxy(typ=socks.PROXY_TYPE_SOCKS5, host=args.proxy_host, port=args.proxy_port)
@@ -699,6 +703,8 @@ if __name__ == '__main__':
     parser.add_argument('-ut', '--max-upload-tests', dest='uploadtests', nargs='?', type=int, default=10, help='Specify maximum number of upload tests to be performed. (Default: 10)')
 
     #parser.add_argument('-i', '--interface', dest='interface', nargs='?', help='If specified, measures speed from data for the whole network interface.')
+
+    parser.add_argument('-v', '--version', dest='version', nargs='?', const=True, help='Show Tespeed version.')
 
     args = parser.parse_args()
     main(args)
