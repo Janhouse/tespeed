@@ -289,21 +289,32 @@ class TeSpeed:
         response = urllib2.urlopen(request);
 
         # Load etree from XML data
-        servers_xml = etree.fromstring(self.DecompressResponse(response))
+        servers_xml = etree.fromstring(response.read())
         servers=servers_xml.find("servers").findall("server")
         server_list=[]
 
         for server in servers:
-            server_list.append({
-            'lat': float(server.attrib['lat']), 
-            'lon': float(server.attrib['lon']),
-            'url': server.attrib['url'][:-10], 
-            'url2': server.attrib['url2'][:-10], 
-            'name': server.attrib['name'], 
-            'country': server.attrib['country'], 
-            'sponsor': server.attrib['sponsor'], 
-            'id': server.attrib['id'], 
-            })
+            try:
+                server_list.append({
+                    'lat': float(server.attrib['lat']), 
+                    'lon': float(server.attrib['lon']),
+                    'url': server.attrib['url'][:-10], 
+                    'url2': server.attrib['url2'][:-10], 
+                    'name': server.attrib['name'], 
+                    'country': server.attrib['country'], 
+                    'sponsor': server.attrib['sponsor'], 
+                    'id': server.attrib['id'], 
+                })
+            except:
+                server_list.append({
+                    'lat': float(server.attrib['lat']), 
+                    'lon': float(server.attrib['lon']),
+                    'url': server.attrib['url'][:-10], 
+                    'name': server.attrib['name'], 
+                    'country': server.attrib['country'], 
+                    'sponsor': server.attrib['sponsor'], 
+                    'id': server.attrib['id'], 
+                })
 
         return server_list
 
@@ -313,6 +324,7 @@ class TeSpeed:
         data = StringIO(response.read())
         gzipper = gzip.GzipFile(fileobj=data)
         return gzipper.read()
+        
 
 
     def FindBestServer(self):
